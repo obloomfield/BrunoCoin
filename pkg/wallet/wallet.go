@@ -3,8 +3,12 @@ package wallet
 import (
 	"BrunoCoin/pkg/block"
 	"BrunoCoin/pkg/block/tx"
+	"BrunoCoin/pkg/block/tx/txi"
+	"BrunoCoin/pkg/block/tx/txo"
 	"BrunoCoin/pkg/blockchain"
 	"BrunoCoin/pkg/id"
+	"BrunoCoin/pkg/proto"
+	"encoding/hex"
 	"sync"
 )
 
@@ -160,18 +164,32 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 
 // some helpful functions/methods/fields:
 // let t be a transaction object
-// w.Id.GetPublicKeyBytes()
-// hex.EncodeToString(...)
-// w.Chain.GetUTXOForAmt(...)
-// proto.NewTx(...)
-// tx.Deserialize(...)
-// w.LmnlTxs.Add(...)
-// w.SendTx <- ...
+// w.Id.GetPublicKeyBytes() -
+// hex.EncodeToString(...) -
+// w.Chain.GetUTXOForAmt(...) -
+// proto.NewTx(...) -
+// tx.Deserialize(...) -
+// w.LmnlTxs.Add(...) -
+// w.SendTx <- ... 
 // utils.FmtAddr(...)
-// t.NameTag()
-// t.UTXO.MkSig(...)
-// proto.NewTxInpt(...)
-// proto.NewTxOutpt(...)
+// t.NameTag() -
+// t.UTXO.MkSig(...) -
+// proto.NewTxInpt(...) -
+// proto.NewTxOutpt(...) -
 func (w *Wallet) HndlTxReq(txR *TxReq) {
-	return
+	utxos, change, utxoFound := w.Chain.GetUTXOForAmt(txR.Amt,hex.EncodeToString(w.Id.GetPublicKeyBytes()))
+	if !utxoFound {
+		return
+	}
+
+	txInputs := []*proto.TransactionInput{}
+	txOutputs := []*proto.TransactionOutput{}
+	for _, value := range utxos {
+		id, _ := value.UTXO.MkSig(w.Id)
+		txInputs = append(txInputs,proto.NewTxInpt(value.TxHsh,value.OutIdx,id,value.Amt))
+
+	}
+
+
+
 }
