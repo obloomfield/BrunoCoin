@@ -24,9 +24,9 @@ import (
 // having blocks removed from the TxQ, sent out
 // again, and added back with a priority of 0.
 type LiminalTxs struct {
-	TxQ          	*tx.Heap
-	TxRplyThresh 	uint32
-	mutex			sync.Mutex
+	TxQ          *tx.Heap
+	TxRplyThresh uint32
+	mutex        sync.Mutex
 }
 
 // NewLmnlTxs (NewLiminalTransactions) returns
@@ -71,11 +71,21 @@ func NewLmnlTxs(c *Config) *LiminalTxs {
 // l.TxQ.RemAbv(...)
 func (l *LiminalTxs) ChkTxs(txs []*tx.Transaction) ([]*tx.Transaction, []*tx.Transaction) {
 	l.mutex.Lock()
-	l.TxQ.IncAll()
-	l.TxQ.RemAbv(...)
-	return nil, nil
-}
+	//filter remover list to remove nil.
+	var realRemover []*tx.Transaction
+	for _, tx := range txs {
+		if tx != nil {
+			realRemover = append(realRemover, tx)
+		}
+	}
 
+	removed := l.TxQ.Rmv(realRemover)
+	l.TxQ.IncAll()
+	removedAbove := l.TxQ.RemAbv(l.TxRplyThresh)
+
+	l.mutex.Unlock()
+	return removedAbove, removed
+}
 
 // Add adds a transaction to the liminal transactions.
 // It is basically a wrapper around the heap add. The
@@ -94,7 +104,7 @@ func (l *LiminalTxs) ChkTxs(txs []*tx.Transaction) ([]*tx.Transaction, []*tx.Tra
 // l.TxQ.Add(...)
 func (l *LiminalTxs) Add(t *tx.Transaction) {
 	l.mutex.Lock()
-	l.TxQ.Add(0,t)
+	l.TxQ.Add(0, t)
 	l.mutex.Unlock()
 	return
 }

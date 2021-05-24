@@ -14,7 +14,6 @@ import (
  *  Designed by: Colby Anderson, John Roy
  */
 
-
 // Debug is optional logger for debugging
 var Debug *log.Logger
 

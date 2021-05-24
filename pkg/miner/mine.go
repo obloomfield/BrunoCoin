@@ -127,7 +127,7 @@ func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 	var amt uint32
 	for _, tx := range txs {
 		var fees uint32 = tx.SumInputs() - tx.SumOutputs() // TODO: IS THIS CORRECT?
-		var mintReward uint32 = determineMintReward(_FINDBLOCKCOUNT_, c.InitSubsdy, c.SubsdyHlvRt, c.MxHlvgs)
+		var mintReward uint32 = determineMintReward(m.ChnLen.Load(), c.InitSubsdy, c.SubsdyHlvRt, c.MxHlvgs)
 		amt = amt + fees + mintReward
 	}
 

@@ -62,7 +62,6 @@ type Wallet struct {
 	mutex sync.Mutex
 }
 
-
 // SetAddr (SetAddress) sets the address
 // of the node in the wallet.
 func (w *Wallet) SetAddr(a string) {
@@ -70,7 +69,6 @@ func (w *Wallet) SetAddr(a string) {
 	w.Addr = a
 	w.mutex.Unlock()
 }
-
 
 // New creates a wallet object.
 // Inputs:
@@ -164,32 +162,43 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 
 // some helpful functions/methods/fields:
 // let t be a transaction object
-// w.Id.GetPublicKeyBytes() -
-// hex.EncodeToString(...) -
-// w.Chain.GetUTXOForAmt(...) -
-// proto.NewTx(...) -
-// tx.Deserialize(...) -
-// w.LmnlTxs.Add(...) -
-// w.SendTx <- ... 
-// utils.FmtAddr(...)
-// t.NameTag() -
-// t.UTXO.MkSig(...) -
-// proto.NewTxInpt(...) -
-// proto.NewTxOutpt(...) -
+// w.Id.GetPublicKeyBytes()
+// hex.EncodeToString(...)
+// w.Chain.GetUTXOForAmt(...)
+// proto.NewTx(...)
+// tx.Deserialize(...)
+// w.LmnlTxs.Add(...)
+// w.SendTx <- ...
+// utils.FmtAddr(...) ???
+// t.NameTag() ???
+// t.UTXO.MkSig(...)
+// proto.NewTxInpt(...)
+// proto.NewTxOutpt(...)
 func (w *Wallet) HndlTxReq(txR *TxReq) {
-	utxos, change, utxoFound := w.Chain.GetUTXOForAmt(txR.Amt,hex.EncodeToString(w.Id.GetPublicKeyBytes()))
+
+	pk := hex.EncodeToString(w.Id.GetPublicKeyBytes())
+	utxos, change, utxoFound := w.Chain.GetUTXOForAmt(txR.Amt, pk)
 	if !utxoFound {
 		return
 	}
 
 	txInputs := []*proto.TransactionInput{}
 	txOutputs := []*proto.TransactionOutput{}
-	for _, value := range utxos {
-		id, _ := value.UTXO.MkSig(w.Id)
-		txInputs = append(txInputs,proto.NewTxInpt(value.TxHsh,value.OutIdx,id,value.Amt))
-
+	for _, utxoInfo := range utxos {
+		if utxoInfo.UTXO != nil {
+			id, _ := utxoInfo.UTXO.MkSig(w.Id)
+			txInputs = append(txInputs, proto.NewTxInpt(utxoInfo.TxHsh, utxoInfo.OutIdx, id, utxoInfo.Amt))
+			txOutputs = append(txOutputs, proto.NewTxOutpt(utxoInfo.Amt, pk))
+		}
+	}
+	if change > 0 {
+		txOutputs = append(txOutputs, proto.NewTxOutpt(change, pk))
 	}
 
+	ptx := proto.NewTx(w.Conf.TxVer, txInputs, txOutputs, w.Conf.DefLckTm)
+	newtx := tx.Deserialize(ptx)
 
+	w.LmnlTxs.Add(newtx)
 
+	w.SendTx <- newtx
 }
