@@ -2,8 +2,9 @@ package miner
 
 import (
 	"BrunoCoin/pkg/block/tx"
-	"go.uber.org/atomic"
 	"sync"
+
+	"go.uber.org/atomic"
 )
 
 /*
@@ -24,15 +25,14 @@ import (
 // Cap is the maximum amount of allowed
 // transactions to store in the pool.
 type TxPool struct {
-	CurPri   	*atomic.Uint32
-	PriLim 		uint32
+	CurPri *atomic.Uint32
+	PriLim uint32
 
-	TxQ 		*tx.Heap
-	Ct			*atomic.Uint32
-	Cap         uint32
-	mutex		sync.Mutex
+	TxQ   *tx.Heap
+	Ct    *atomic.Uint32
+	Cap   uint32
+	mutex sync.Mutex
 }
-
 
 // Length returns the count of transactions
 // currently in the pool.
@@ -41,7 +41,6 @@ type TxPool struct {
 func (tp *TxPool) Length() uint32 {
 	return tp.Ct.Load()
 }
-
 
 // NewTxPool constructs a transaction pool.
 func NewTxPool(c *Config) *TxPool {
@@ -54,14 +53,12 @@ func NewTxPool(c *Config) *TxPool {
 	}
 }
 
-
 // PriMet (PriorityMet) checks to see
 // if the transaction pool has enough
 // cumulative priority to start mining.
 func (tp *TxPool) PriMet() bool {
 	return tp.CurPri.Load() >= tp.PriLim
 }
-
 
 // CalcPri (CalculatePriority) calculates the
 // priority of a transaction by dividing the
@@ -78,9 +75,12 @@ func (tp *TxPool) PriMet() bool {
 // let t be a transaction object
 // t.Sz()
 func CalcPri(t *tx.Transaction) uint32 {
-	return 0
+	if t.Inputs == nil || t.Outputs == nil {
+		return 0
+	} else {
+		return ((t.SumInputs() - t.SumOutputs()) / t.Sz()) * 100
+	}
 }
-
 
 // Add adds a transaction to the transaction pool.
 // If the transaction pool is full, the transaction
@@ -103,9 +103,16 @@ func CalcPri(t *tx.Transaction) uint32 {
 // tp.mutex.Lock()
 // tp.mutex.Unlock()
 func (tp *TxPool) Add(t *tx.Transaction) {
+	tp.mutex.Lock()
+	if tp.Ct.Load() < tp.Cap && t != nil {
+		tPri := CalcPri(t)
+		tp.CurPri.Add(tPri)
+		tp.Ct.Add(1)
+		tp.TxQ.Add(tPri, t)
+	}
+	tp.mutex.Unlock()
 	return
 }
-
 
 // ChkTxs (CheckTransactions) checks for any duplicate
 // transactions in the heap and removes them.
@@ -124,5 +131,25 @@ func (tp *TxPool) Add(t *tx.Transaction) {
 // tp.mutex.Unlock()
 // tp.TxQ.Rmv(...)
 func (tp *TxPool) ChkTxs(remover []*tx.Transaction) {
+	tp.mutex.Lock()
+	//filter remover list to remove nil.
+	var realRemover []*tx.Transaction
+	for _, tx := range remover {
+		if tx != nil {
+			realRemover = append(realRemover, tx)
+		}
+	}
+	//Rmv has return type that gives list of all txs removed
+	removed := tp.TxQ.Rmv(realRemover)
+	tp.Ct.Store(tp.Length())
+
+	//count up the total priority of all removed
+	priAcc := uint32(0)
+	for _, tx := range removed {
+		priAcc = priAcc + CalcPri(tx)
+	}
+	tp.CurPri.Sub(priAcc)
+
+	tp.mutex.Unlock()
 	return
 }

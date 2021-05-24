@@ -40,7 +40,6 @@ func NewTx(ver uint32, inpts []*TransactionInput,
 	}
 }
 
-
 // SzOfBlk (SizeOfBlock) returns the
 // size of the block in bytes
 // Returns:
@@ -54,7 +53,6 @@ func SzOfBlk(b *Block) uint32 {
 	sz += SzOfHdr(b.Header)
 	return sz
 }
-
 
 // SzOfHdr (SizeOfBlockHeader) returns
 // the size of the block header in bytes
@@ -70,7 +68,6 @@ func SzOfHdr(h *BlockHeader) uint32 {
 	sz += uint32(unsafe.Sizeof(h.Timestamp))
 	return sz
 }
-
 
 // NewTxInpt (NewTransactionInput) returns
 // a new protobuf transaction input.
