@@ -3,8 +3,6 @@ package wallet
 import (
 	"BrunoCoin/pkg/block"
 	"BrunoCoin/pkg/block/tx"
-	"BrunoCoin/pkg/block/tx/txi"
-	"BrunoCoin/pkg/block/tx/txo"
 	"BrunoCoin/pkg/blockchain"
 	"BrunoCoin/pkg/id"
 	"BrunoCoin/pkg/proto"
@@ -93,6 +91,18 @@ func New(c *Config, id id.ID, chain *blockchain.Blockchain) *Wallet {
 	}
 }
 
+//TODO: ASK COLBY IF THIS IS LEGIT
+//MEMBERSHIP FUNCTION, FROM STACKOVERFLOW:
+//https://stackoverflow.com/questions/10485743/contains-method-for-a-slice
+func contains(s []*tx.Transaction, e *tx.Transaction) bool {
+	for _, a := range s {
+		if a.Hash() == e.Hash() {
+			return true
+		}
+	}
+	return false
+}
+
 // HndlBlk (HandleBlock) is called after a new
 // block is added to the main chain. However, the
 // inputted block is a "safe block amount" down from
@@ -124,7 +134,14 @@ func New(c *Config, id id.ID, chain *blockchain.Blockchain) *Wallet {
 // t.NameTag()
 // w.SendTx <- ...
 func (w *Wallet) HndlBlk(b *block.Block) {
-	return
+	lOld1, lOld2 := w.LmnlTxs.ChkTxs(b.Transactions)
+	for _, tx := range append(lOld1, lOld2...) {
+		if tx != nil {
+			tx.LockTime = tx.LockTime + 1
+			w.LmnlTxs.Add(tx)
+			w.SendTx <- tx
+		}
+	}
 }
 
 // HndlTxReq (HandleTransactionRequest) attempts to

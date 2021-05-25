@@ -3,6 +3,8 @@ package pkg
 import (
 	"BrunoCoin/pkg/block"
 	"BrunoCoin/pkg/block/tx"
+	"BrunoCoin/pkg/block/tx/txi"
+	"BrunoCoin/pkg/block/tx/txo"
 )
 
 /*
@@ -11,7 +13,6 @@ import (
  *	Parker Ljung
  *
  */
-
 
 // ChkBlk (CheckBlock) validates a block based on multiple
 // conditions.
@@ -48,9 +49,12 @@ import (
 // b.Sz()
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
-	return false
+	isFirstCoinbase := b.Transactions[0].IsCoinbase()
+	isBlockSizeValid := b.Sz() <= n.Conf.MxBlkSz
+	isPOWSatisfied := b.SatisfiesPOW(b.Hdr.DiffTarg)
+	isValidUTXO := n.Chain.ChkChainsUTXO(b.Transactions, b.Hdr.PrvBlkHsh)
+	return isFirstCoinbase && isBlockSizeValid && isPOWSatisfied && isValidUTXO
 }
-
 
 // ChkTx (CheckTransaction) validates a transaction.
 // Inputs:
@@ -84,5 +88,26 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 // t.SumInputs()
 // t.SumOutputs()
 func (n *Node) ChkTx(t *tx.Transaction) bool {
-	return false
+	noEmptyInputs := t.Inputs != nil && t.Outputs != nil
+	inSumLarger := t.SumInputs() > t.SumOutputs()
+	smallerThanMax := t.Sz() < n.Conf.MxBlkSz
+	TxiTxoValidity := checkValidPerTX(t.Inputs, t.Outputs, n)
+
+	return noEmptyInputs && inSumLarger && smallerThanMax && TxiTxoValidity
+}
+
+func checkValidPerTX(txis []*txi.TransactionInput, txos []*txo.TransactionOutput, n *Node) bool {
+	for _, txi := range txis {
+		//no double spend issue || unlocking script issue
+		if n.Chain.IsInvalidInput(txi) || !n.Chain.GetUTXO(txi).IsUnlckd(txi.UnlockingScript) {
+			return false
+		}
+	}
+	for _, txo := range txos {
+		// amount isn't 0 or less
+		if txo.Amount <= 0 {
+			return false
+		}
+	}
+	return true
 }

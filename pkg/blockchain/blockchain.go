@@ -309,6 +309,24 @@ type UTXOInfo struct {
 // bc.Lock()
 // bc.Unlock()
 func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uint32, bool) {
+	bc.Lock()
+
+	utxos := bc.LastBlock.utxo
+	amtAcc := uint32(0)
+	utxosAcc := make(map[string]*txo.TransactionOutput)
+
+	for key, utxo := range utxos {
+		amtAcc = amtAcc + utxo.Amount
+		//conditional, if so:
+		utxosAcc[key] = utxo
+		if amtAcc >= amt {
+			//good to go, return!:
+			bc.Unlock()
+			return nil, (amtAcc - amt), true
+		}
+
+	}
+	bc.Unlock()
 	return nil, 0, false
 }
 
