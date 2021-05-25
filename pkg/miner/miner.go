@@ -135,8 +135,8 @@ func (m *Miner) HndlChkBlk(b *block.Block) {
 func (m *Miner) HndlTx(t *tx.Transaction) {
 	if t != nil {
 		m.TxP.Add(t)
+		m.PoolUpdated <- true
 	}
-	m.PoolUpdated <- true
 	return
 }
 
