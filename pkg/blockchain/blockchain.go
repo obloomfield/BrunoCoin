@@ -309,6 +309,16 @@ type UTXOInfo struct {
 // bc.Lock()
 // bc.Unlock()
 func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uint32, bool) {
+	bc.Lock()
+	utxo := txo.PrsTXOLoc(bc.LastBlock.utxo)
+	amtAcc := 0
+	utxoAcc :=
+
+	for key, val := range utxo {
+
+	}
+	//recur thru this, sum up the total value by getting txo.prs
+
 	return nil, 0, false
 }
 

@@ -3,8 +3,6 @@ package wallet
 import (
 	"BrunoCoin/pkg/block"
 	"BrunoCoin/pkg/block/tx"
-	"BrunoCoin/pkg/block/tx/txi"
-	"BrunoCoin/pkg/block/tx/txo"
 	"BrunoCoin/pkg/blockchain"
 	"BrunoCoin/pkg/id"
 	"BrunoCoin/pkg/proto"
@@ -124,6 +122,10 @@ func New(c *Config, id id.ID, chain *blockchain.Blockchain) *Wallet {
 // t.NameTag()
 // w.SendTx <- ...
 func (w *Wallet) HndlBlk(b *block.Block) {
+	l1, l2 := w.LmnlTxs.ChkTxs(b.Transactions)
+	for _, tx := range b.Transactions {
+		if (tx)
+	}
 	return
 }
 

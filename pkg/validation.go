@@ -48,6 +48,7 @@ import (
 // b.Sz()
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
+	t.IsCoinbase()
 	return false
 }
 
@@ -84,5 +85,8 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 // t.SumInputs()
 // t.SumOutputs()
 func (n *Node) ChkTx(t *tx.Transaction) bool {
+	if (len(t.Inputs) > 0 && len(t.Outputs) > 0 && t.Sz() > 0 && t.SumInputs() > t.SumOutputs() && t.Sz() < n.Conf.MxBlkSz ) {
+
+	}
 	return false
 }
