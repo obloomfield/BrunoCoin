@@ -98,38 +98,29 @@ func (bc *Blockchain) SetAddr(a string) {
 func (bc *Blockchain) Add(b *block.Block) {
 	bc.Lock()
 	defer bc.Unlock()
-	// prvNode := bc.blocks[b.Hdr.PrvBlkHsh]
+	prvNode := bc.blocks[b.Hdr.PrvBlkHsh]
 
-	// txoAcc := []*txo.TransactionOutput{}
-	// txiAcc := []*txi.TransactionInput{}
+	//TODO: does this defensive copy??
+	utxoMap := prvNode.utxo
 
-	// //no better way to defensive copy a map methinks
-	// for key, txo := range prvNode.utxo {
-	// 	txoAcc = append(txoAcc, txo)
-	// }
+	for _, tx := range b.Transactions {
+		for i, txout := range tx.Outputs {
+			//add new utxo from outputs
+			hash := txo.MkTXOLoc(txout.Hash(), uint32(i))
+			utxoMap[hash] = txout
+		}
 
-	// //WARNING: I am sure this is wrong, but better than nothing :P
-	// //add new utxo from new block
-	// for _, tx := range b.Transactions {
-	// 	//uhh i guess add it to every transaction cause idk which to add it to? :P
-	// 	tx.Outputs = append(tx.Outputs, txoAcc...)
-	// 	// for _, txo := range tx.Outputs {
-	// 	// 	txoAcc = append(txoAcc, txo)
-	// 	// }
-
-	// 	// for _, txi := range tx.Inputs {
-	// 	// 	txiAcc = append(txiAcc, txi)
-	// 	// }
-	// }
-
-	// txAdd := tx.Transaction{b.Hdr.Ver, txiAcc, txoAcc, b.Transactions[0].LockTime} //TODO: super sus loll
-
-	//these inputs should reference the txo on the previous block
-	//current utxo,
-	//new block; look thru all inputs, this input used that txo, now remove, remove all utxo
-	//look at block txos, created a bunch of new utxos, add those.
+		for _, txi := range tx.Inputs {
+			//remove used utxo from inputs
+			hash := txo.MkTXOLoc(txi.TransactionHash, txi.OutputIndex)
+			//function to delete from map:
+			delete(utxoMap, hash)
+		}
+	}
 
 	//newBlck := block.New(bc.LastBlock.Hash(), b.Transactions, block.Header.DiffTarg)
+
+	bc.LastBlock = &BlockchainNode{b, prvNode, utxoMap, prvNode.depth + 1}
 
 	return
 }
@@ -345,26 +336,26 @@ type UTXOInfo struct {
 // bc.Unlock()
 func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uint32, bool) {
 	bc.Lock()
+	defer bc.Unlock()
 
 	utxos := bc.LastBlock.utxo
 	amtAcc := uint32(0)
-	utxosAcc := make(map[string]*txo.TransactionOutput)
 	uxtoInfoAcc := []*UTXOInfo{}
 
 	for key, utxo := range utxos {
-		amtAcc = amtAcc + utxo.Amount
 		//conditional, if so:
-		utxosAcc[key] = utxo
-		hash, index := txo.PrsTXOLoc(key)
-		uxtoInfoAcc = append(uxtoInfoAcc, &UTXOInfo{TxHsh: hash, OutIdx: index, UTXO: utxo, Amt: utxo.Amount})
+		if utxo.LockingScript == pubKey {
+			hash, index := txo.PrsTXOLoc(key)
+			uxtoInfoAcc = append(uxtoInfoAcc, &UTXOInfo{TxHsh: hash, OutIdx: index, UTXO: utxo, Amt: utxo.Amount})
+			amtAcc = amtAcc + utxo.Amount
+		}
+
 		if amtAcc >= amt {
 			//good to go, return!:
-			bc.Unlock()
 			return uxtoInfoAcc, (amtAcc - amt), true
 		}
 
 	}
-	bc.Unlock()
 	return nil, 0, false
 }
 
