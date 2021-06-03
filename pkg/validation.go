@@ -88,9 +88,9 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 // t.SumInputs()
 // t.SumOutputs()
 func (n *Node) ChkTx(t *tx.Transaction) bool {
-	noEmptyInputs := t.Inputs != nil && t.Outputs != nil
+	noEmptyInputs := len(t.Inputs) > 0 && len(t.Outputs) > 0
 	inSumLarger := t.SumInputs() > t.SumOutputs()
-	smallerThanMax := t.Sz() < n.Conf.MxBlkSz
+	smallerThanMax := t.Sz() <= n.Conf.MxBlkSz
 	TxiTxoValidity := checkValidPerTX(t.Inputs, t.Outputs, n)
 
 	return noEmptyInputs && inSumLarger && smallerThanMax && TxiTxoValidity

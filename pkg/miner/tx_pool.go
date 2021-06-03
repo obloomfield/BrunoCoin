@@ -75,10 +75,14 @@ func (tp *TxPool) PriMet() bool {
 // let t be a transaction object
 // t.Sz()
 func CalcPri(t *tx.Transaction) uint32 {
-	if t.Inputs == nil || t.Outputs == nil {
+	if t == nil {
 		return 0
+	}
+	priority := ((t.SumInputs() - t.SumOutputs()) / t.Sz()) * 100
+	if priority == 0 {
+		return 1
 	} else {
-		return ((t.SumInputs() - t.SumOutputs()) / t.Sz()) * 100
+		return priority
 	}
 }
 
@@ -104,7 +108,7 @@ func CalcPri(t *tx.Transaction) uint32 {
 // tp.mutex.Unlock()
 func (tp *TxPool) Add(t *tx.Transaction) {
 	tp.mutex.Lock()
-	if tp.Ct.Load() < tp.Cap && t != nil {
+	if tp.Length() < tp.Cap && t != nil {
 		tPri := CalcPri(t)
 		tp.CurPri.Add(tPri)
 		tp.Ct.Add(1)

@@ -186,8 +186,8 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 // tx.Deserialize(...)
 // w.LmnlTxs.Add(...)
 // w.SendTx <- ...
-// utils.FmtAddr(...) ???
-// t.NameTag() ???
+// utils.FmtAddr(...)
+// t.NameTag()
 // t.UTXO.MkSig(...)
 // proto.NewTxInpt(...)
 // proto.NewTxOutpt(...)
@@ -205,11 +205,11 @@ func (w *Wallet) HndlTxReq(txR *TxReq) {
 		if utxoInfo.UTXO != nil {
 			id, _ := utxoInfo.UTXO.MkSig(w.Id)
 			txInputs = append(txInputs, proto.NewTxInpt(utxoInfo.TxHsh, utxoInfo.OutIdx, id, utxoInfo.Amt))
-			txOutputs = append(txOutputs, proto.NewTxOutpt(utxoInfo.Amt, pk))
+			txOutputs = append(txOutputs, proto.NewTxOutpt(utxoInfo.Amt, hex.EncodeToString(txR.PubK)))
 		}
 	}
-	if change > 0 {
-		txOutputs = append(txOutputs, proto.NewTxOutpt(change, pk))
+	if (change - txR.Fee) > 0 {
+		txOutputs = append(txOutputs, proto.NewTxOutpt(change-txR.Fee, pk))
 	}
 
 	ptx := proto.NewTx(w.Conf.TxVer, txInputs, txOutputs, w.Conf.DefLckTm)

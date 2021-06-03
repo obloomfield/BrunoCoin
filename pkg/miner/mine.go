@@ -6,6 +6,7 @@ import (
 	"BrunoCoin/pkg/proto"
 	"BrunoCoin/pkg/utils"
 	"context"
+	"encoding/hex"
 	"math"
 )
 
@@ -92,15 +93,6 @@ func (m *Miner) DifTrg() string {
 // 3. Then a transaction is made with zero inputs
 // and with an output paying the miner fees + mint
 
-func determineMintReward(numBlocks uint32, initSubsidy uint32, halfRate uint32, maxHalves uint32) uint32 {
-	timesToFloor := math.Floor(float64(numBlocks) / float64(halfRate))
-	total := float64(initSubsidy) / math.Pow(2, timesToFloor)
-	if total-math.Floor(total) > 0 || timesToFloor > float64(maxHalves) {
-		return 0
-	}
-	return uint32(total)
-}
-
 // some functions/fields/methods that might be helpful
 //
 // tx.Deserialize(...) // protoTransaction -> Transaction
@@ -118,31 +110,30 @@ func determineMintReward(numBlocks uint32, initSubsidy uint32, halfRate uint32, 
 // t.SumOutputs() // Sum all transaction outputs
 func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 
-	// OUR OWN TODO:
-	// - find the block count
-	// - generate the private key
-	// - profit? (some small stuff on powdnums)
-
-	c := DefaultConfig(0) //TODO: learn what the hell powdNumZeroes means
+	c := m.Conf
 	var amt uint32
 	for _, tx := range txs {
-		var fees uint32 = tx.SumInputs() - tx.SumOutputs() // TODO: IS THIS CORRECT?
-		var mintReward uint32 = determineMintReward(m.ChnLen.Load(), c.InitSubsdy, c.SubsdyHlvRt, c.MxHlvgs)
-		amt = amt + fees + mintReward
+		var fees uint32 = tx.SumInputs() - tx.SumOutputs()
+		amt = amt + fees
 	}
 
-	pk := ""
+	var mintReward uint32 = determineMintReward(m.ChnLen.Load(), c.InitSubsdy, c.SubsdyHlvRt, c.MxHlvgs)
+	amt = amt + mintReward
 
-	//iterate thru transacitons
-	//if they mined, how much money made; fees + minting reward
-	//based on that, make a transaction to pay miner money
-	//return transaction
-
-	//c.maxhalvings times OR you can't subdivide
+	pk := hex.EncodeToString(m.Id.GetPublicKeyBytes())
 
 	cbOutputTX := []*proto.TransactionOutput{proto.NewTxOutpt(amt, pk)}
 
 	cbt := proto.NewTx(m.Conf.Ver, nil, cbOutputTX, m.Conf.DefLckTm)
 
 	return tx.Deserialize(cbt)
+}
+
+func determineMintReward(numBlocks uint32, initSubsidy uint32, halfRate uint32, maxHalves uint32) uint32 {
+	timesToHalf := numBlocks / halfRate
+	if timesToHalf > maxHalves {
+		return 0
+	}
+	reward := uint32(math.Floor(float64(initSubsidy) / math.Pow(2, float64(timesToHalf))))
+	return reward
 }

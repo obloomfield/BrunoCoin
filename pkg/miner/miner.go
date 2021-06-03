@@ -97,7 +97,7 @@ func (m *Miner) StartMiner() {
 // m.IncChnLen()
 // m.HndlChkBlk(...)
 func (m *Miner) HndlBlk(b *block.Block) {
-	m.SetHash(b.Hdr.PrvBlkHsh)
+	m.SetHash(b.Hash())
 	m.IncChnLen()
 	m.HndlChkBlk(b)
 	return
@@ -115,7 +115,9 @@ func (m *Miner) HndlBlk(b *block.Block) {
 // m.PoolUpdated <- ...
 func (m *Miner) HndlChkBlk(b *block.Block) {
 	m.TxP.ChkTxs(b.Transactions)
-	m.PoolUpdated <- true
+	if m.Mining.Load() {
+		m.PoolUpdated <- true
+	}
 }
 
 // HndlTx (HandleTransaction) handles a validated transaction from the network. If the transaction is not an orphan, it
@@ -135,7 +137,9 @@ func (m *Miner) HndlChkBlk(b *block.Block) {
 func (m *Miner) HndlTx(t *tx.Transaction) {
 	if t != nil {
 		m.TxP.Add(t)
-		m.PoolUpdated <- true
+		if m.Mining.Load() { //if active:
+			m.PoolUpdated <- true
+		}
 	}
 	return
 }
