@@ -100,21 +100,26 @@ func (bc *Blockchain) Add(b *block.Block) {
 	defer bc.Unlock()
 	prvNode := bc.blocks[b.Hdr.PrvBlkHsh]
 
-	//TODO: does this defensive copy??
-	utxoMap := prvNode.utxo
+	//defensive copy of the utxo map
+	utxoMap := make(map[string]*txo.TransactionOutput)
+	for key, val := range utxoMap {
+		utxoMap[key] = val
+	}
 
 	for _, tx := range b.Transactions {
-		for i, txout := range tx.Outputs {
-			//add new utxo from outputs
-			hash := txo.MkTXOLoc(txout.Hash(), uint32(i))
-			utxoMap[hash] = txout
-		}
+		if tx != nil {
+			for i, txout := range tx.Outputs {
+				//add new utxo from outputs
+				hash := txo.MkTXOLoc(txout.Hash(), uint32(i))
+				utxoMap[hash] = txout
+			}
 
-		for _, txi := range tx.Inputs {
-			//remove used utxo from inputs
-			hash := txo.MkTXOLoc(txi.TransactionHash, txi.OutputIndex)
-			//function to delete from map:
-			delete(utxoMap, hash)
+			for _, txi := range tx.Inputs {
+				//remove used utxo from inputs
+				hash := txo.MkTXOLoc(txi.TransactionHash, txi.OutputIndex)
+				//function to delete from map:
+				delete(utxoMap, hash)
+			}
 		}
 	}
 
