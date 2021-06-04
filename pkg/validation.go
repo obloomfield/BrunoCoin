@@ -49,6 +49,9 @@ import (
 // b.Sz()
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
+	if b.Transactions == nil {
+		return false
+	}
 	isFirstCoinbase := b.Transactions[0].IsCoinbase()
 	isBlockSizeValid := b.Sz() <= n.Conf.MxBlkSz
 	isPOWSatisfied := b.SatisfiesPOW(b.Hdr.DiffTarg)

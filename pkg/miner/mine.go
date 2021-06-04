@@ -110,9 +110,16 @@ func (m *Miner) DifTrg() string {
 // t.SumOutputs() // Sum all transaction outputs
 func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 
+	if txs == nil {
+		return nil
+	}
+
 	c := m.Conf
 	var amt uint32
 	for _, tx := range txs {
+		if tx == nil {
+			return nil
+		}
 		var fees uint32 = tx.SumInputs() - tx.SumOutputs()
 		amt = amt + fees
 	}
