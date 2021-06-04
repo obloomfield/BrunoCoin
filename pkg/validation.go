@@ -49,13 +49,13 @@ import (
 // b.Sz()
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
-	//testing all nil cases:
+	//testing all nil cases, I think some of these should be important :P:
 	if b == nil || b.Transactions == nil || len(b.Transactions) == 0 || b.Transactions[0] == nil || b.Transactions[0].SumOutputs() == 0 {
 		return false
 	}
 	isFirstCoinbase := b.Transactions[0].IsCoinbase()
 	isBlockSizeValid := b.Sz() < n.Conf.MxBlkSz
-	isPOWSatisfied := b.SatisfiesPOW(b.Hash())
+	isPOWSatisfied := b.SatisfiesPOW(b.Hdr.DiffTarg)
 	isValidUTXO := n.Chain.ChkChainsUTXO(b.Transactions, b.Hdr.PrvBlkHsh)
 	return isFirstCoinbase && isBlockSizeValid && isPOWSatisfied && isValidUTXO
 }

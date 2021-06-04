@@ -193,6 +193,10 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 // proto.NewTxOutpt(...)
 func (w *Wallet) HndlTxReq(txR *TxReq) {
 
+	if txR.Amt == 0 {
+		return
+	}
+
 	pk := hex.EncodeToString(w.Id.GetPublicKeyBytes())
 	utxos, change, utxoFound := w.Chain.GetUTXOForAmt(txR.Amt, pk)
 	if !utxoFound {
