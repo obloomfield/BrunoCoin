@@ -110,7 +110,7 @@ func (m *Miner) DifTrg() string {
 // t.SumOutputs() // Sum all transaction outputs
 func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 
-	if txs == nil {
+	if txs == nil || len(txs) == 0 {
 		return nil
 	}
 

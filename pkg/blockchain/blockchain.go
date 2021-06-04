@@ -365,7 +365,7 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 
 	for key, utxo := range utxos {
 		//conditional, if so:
-		if utxo.LockingScript == pubKey {
+		if !utxo.Liminal && utxo.LockingScript == pubKey {
 			hash, index := txo.PrsTXOLoc(key)
 			uxtoInfoAcc = append(uxtoInfoAcc, &UTXOInfo{TxHsh: hash, OutIdx: index, UTXO: utxo, Amt: utxo.Amount})
 			amtAcc = amtAcc + utxo.Amount
