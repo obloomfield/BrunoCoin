@@ -54,7 +54,7 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 		return false
 	}
 	isFirstCoinbase := b.Transactions[0].IsCoinbase()
-	isBlockSizeValid := b.Sz() < n.Conf.MxBlkSz
+	isBlockSizeValid := b.Sz() <= n.Conf.MxBlkSz
 	isPOWSatisfied := b.SatisfiesPOW(b.Hdr.DiffTarg)
 	isValidUTXO := n.Chain.ChkChainsUTXO(b.Transactions, b.Hdr.PrvBlkHsh)
 	return isFirstCoinbase && isBlockSizeValid && isPOWSatisfied && isValidUTXO
