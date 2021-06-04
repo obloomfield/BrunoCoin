@@ -6,6 +6,7 @@ import (
 	"BrunoCoin/pkg/block/tx/txi"
 	"BrunoCoin/pkg/block/tx/txo"
 	"BrunoCoin/pkg/proto"
+	"BrunoCoin/pkg/utils"
 	"fmt"
 	"strings"
 	"sync"
@@ -98,7 +99,13 @@ func (bc *Blockchain) SetAddr(a string) {
 func (bc *Blockchain) Add(b *block.Block) {
 	bc.Lock()
 	defer bc.Unlock()
-	prvNode := bc.blocks[b.Hdr.PrvBlkHsh]
+	prvNode, isFound := bc.blocks[b.Hdr.PrvBlkHsh]
+
+	if !isFound {
+		//Block not found!!
+		return
+	}
+	// prvNode := bc.LastBlock
 
 	//defensive copy of the utxo map
 	utxoMap := make(map[string]*txo.TransactionOutput)
@@ -123,9 +130,18 @@ func (bc *Blockchain) Add(b *block.Block) {
 		}
 	}
 
-	//newBlck := block.New(bc.LastBlock.Hash(), b.Transactions, block.Header.DiffTarg)
+	newNode := &BlockchainNode{b, prvNode, utxoMap, prvNode.depth + 1}
 
-	bc.LastBlock = &BlockchainNode{b, prvNode, utxoMap, prvNode.depth + 1}
+	bc.blocks[b.Hash()] = newNode
+	//bc.LastBlock = newNode
+
+	if newNode.depth >= bc.LastBlock.depth { //if the depth of new chain is greater than main chain...
+		//make this the NEW main chain
+		bc.LastBlock = newNode
+	}
+
+	//newBlck := block.New(bc.LastBlock.Hash(), b.Transactions, block.Header.DiffTarg)
+	utils.Debug.Printf("<<Successfully added a block to the blockchain!!>>")
 
 	return
 }

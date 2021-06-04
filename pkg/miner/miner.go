@@ -137,7 +137,7 @@ func (m *Miner) HndlChkBlk(b *block.Block) {
 func (m *Miner) HndlTx(t *tx.Transaction) {
 	if t != nil {
 		m.TxP.Add(t)
-		if m.Mining.Load() { //if active:
+		if m.Active.Load() { //if active:
 			m.PoolUpdated <- true
 		}
 	}
