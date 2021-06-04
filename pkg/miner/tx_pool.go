@@ -78,7 +78,7 @@ func CalcPri(t *tx.Transaction) uint32 {
 	if t == nil {
 		return 0
 	}
-	priority := ((t.SumInputs() - t.SumOutputs()) / t.Sz()) * 100
+	priority := (((t.SumInputs() - t.SumOutputs()) * 100) / t.Sz())
 	if priority == 0 {
 		return 1
 	} else {
